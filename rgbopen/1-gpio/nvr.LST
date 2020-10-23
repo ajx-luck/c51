@@ -1,0 +1,106 @@
+C51 COMPILER V9.01   NVR                                                                   10/23/2020 19:29:25 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE NVR
+OBJECT MODULE PLACED IN nvr.OBJ
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE nvr.c OPTIMIZE(8,SPEED) BROWSE INCDIR(..\HeadFile) DEBUG OBJECTEXTEND TABS(
+                    -2)
+
+line level    source
+
+   1          
+   2          /*********************************************************
+   3          *Copyright (C), 2020-2030, 深圳前海维晟智能技术有限公司
+   4          *文件名: nvr.c
+   5          *作  者:  
+   6          *版  本:  V1.00
+   7          *日  期:  20200418
+   8          *描  述:  
+   9          *备  注:     
+  10          **********************************************************/
+  11          #include  "WS51F7030.h"
+  12          
+  13          #define NVR_UNLOCK          0x78
+  14          #define NVR_WRITE           0x82
+  15          #define NVR_ERASE           0x83
+  16          #define NVR_LOCK          0x87
+  17          #define NVR_READ          0x81
+  18          
+  19          
+  20          void EraseNVR(unsigned short SectorAddr)
+  21          {
+  22   1        //1  Flash unlock
+  23   1        FSFLG=NVR_UNLOCK;
+  24   1      
+  25   1        //2  write address
+  26   1        FSADRL=(SectorAddr&0xff);
+  27   1        FSADRH=((SectorAddr>>8)&0xff);
+  28   1        //3  Flash erase cmd
+  29   1        FSCMD=NVR_ERASE;
+  30   1        //4 NVR lock
+  31   1        FSFLG=NVR_LOCK;
+  32   1      }
+  33          
+  34          void WriteDataNVR(unsigned char *buf,unsigned short SectorAddr,unsigned short len)
+  35          {
+  36   1        unsigned char i=0;
+  37   1        //1  Flash unlock
+  38   1        FSFLG=NVR_UNLOCK;
+  39   1        //2  Flash  write cmd
+  40   1        FSCMD=NVR_WRITE;  
+  41   1        for(i=0;i<len;++i)
+  42   1        {
+  43   2          //3  write address    
+  44   2          FSADRL=(SectorAddr&0xff);
+  45   2          FSADRH=((SectorAddr>>8)&0xff);
+  46   2          SectorAddr++;
+  47   2          //4 write data
+  48   2          FSDAT=buf[i];
+  49   2        }
+  50   1        //4 NVR lock
+  51   1        FSFLG=NVR_LOCK;
+  52   1      }
+  53          
+  54          void readDatafromNVR(unsigned char *buf,unsigned short SectorAddr,unsigned short len)
+C51 COMPILER V9.01   NVR                                                                   10/23/2020 19:29:25 PAGE 2   
+
+  55          {
+  56   1        unsigned char i=0;
+  57   1        //1  read cmd
+  58   1        FSCMD=NVR_READ;
+  59   1        for(i=0;i<len;++i)
+  60   1        {
+  61   2          //2  write address    
+  62   2          FSADRL=(SectorAddr&0xff);
+  63   2          FSADRH=((SectorAddr>>8)&0xff);
+  64   2          ++SectorAddr;
+  65   2          //3 read data
+  66   2          buf[i]=FSDAT;
+  67   2        }
+  68   1      }
+  69          
+  70          
+  71          
+  72          
+  73          
+  74          
+  75          
+  76          
+  77          
+  78          
+  79          
+  80          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    181    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      14
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,1170 @@
+C51 COMPILER V9.01   MAIN                                                                  10/23/2020 19:29:24 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN main.OBJ
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE INCDIR(..\HeadFile) DEBUG OBJECTEXTEND TABS
+                    -(2)
+
+line level    source
+
+   1          
+   2          /*********************************************************
+   3          *Copyright (C), 2020-2030, 深圳前海维晟智能技术有限公司
+   4          *文件名:  gpio.c
+   5          *作  者:  
+   6          *版  本:  V1.00
+   7          *日  期:  20200418
+   8          *描  述:  
+   9          *备  注:     
+  10          **********************************************************/
+  11          #include "user.h"
+  12          
+  13          //IR
+  14          
+  15          
+  16          
+  17          
+  18          
+  19          
+  20          //RGB
+  21          
+  22          
+  23          
+  24          
+  25          
+  26          //ctr
+  27          
+  28          
+  29          static void delay(int i)
+  30          {
+  31   1        long j;
+  32   1        for(j=0;j<10*i;++j);
+  33   1      }
+  34          
+  35          static void delay_1ms(void)
+  36          {
+  37   1        int j;
+  38   1        for(j=0;j<1700;++j);
+  39   1      }
+  40          
+  41          static void delay_10ms(void)
+  42          {
+  43   1        int j;
+  44   1        for(j=0;j<17700;++j);
+  45   1      }
+  46          
+  47          void Delay80us()
+  48          {
+  49   1        int j;
+  50   1        for(j =0;j<100;j++)
+  51   1        {
+  52   2          _nop_();
+  53   2          if(IR == 0)
+  54   2            return;
+C51 COMPILER V9.01   MAIN                                                                  10/23/2020 19:29:24 PAGE 2   
+
+  55   2        }
+  56   1      }
+  57          
+  58          
+  59          void Delay10Us(void){
+  60   1        _nop_();
+  61   1        _nop_();
+  62   1        _nop_();
+  63   1        _nop_();
+  64   1        _nop_();
+  65   1        _nop_();
+  66   1      }
+  67          
+  68          /******************************************************************
+  69          说明：
+  70          *******************************************************************/
+  71          void main()
+  72          {
+  73   1        u8 i;
+  74   1        //系统时钟配置
+  75   1          SCCON = 0x00;//HRC
+  76   1        HRCON |= 0x80;
+  77   1        
+  78   1        P10F = 2; 
+  79   1        P10=0;
+  80   1        delay_10ms(); // 如果使用了下载口P33/P34 , 需要在mian函数中初始化P33/34之前加延时，复位后才能下载程序
+  81   1        P10=0;
+  82   1          /****************** 管脚配置 ********************/
+  83   1        P10F = 0x81; //输入，打开上拉
+  84   1          P11F = 2; 
+  85   1          P12F = 2;
+  86   1          P13F = 2; 
+  87   1          P14F = 2; 
+  88   1          P15F = 2;
+  89   1          P16F = 2; 
+  90   1          P17F = 2; 
+  91   1        
+  92   1          P30F = 2;
+  93   1          P31F = 2;
+  94   1          P32F = 2;
+  95   1         // P33F = 1;
+  96   1         // P34F = 2;
+  97   1          P35F = 1;
+  98   1        INT1Level = 1;
+  99   1        init_timer0();
+ 100   1        init_timer1();
+ 101   1        while(1)
+ 102   1        {
+ 103   2          
+ 104   2          if(ReadOver)
+ 105   2          {
+ 106   3            proData();
+ 107   3          }
+ 108   2          if(INT1Level && IR == 1)
+ 109   2          { 
+ 110   3            INT1Level = 0;
+ 111   3            proLow();
+ 112   3          }
+ 113   2          else if(INT1Level == 0 && IR == 0)
+ 114   2          {
+ 115   3      
+ 116   3            INT1Level = 1;
+C51 COMPILER V9.01   MAIN                                                                  10/23/2020 19:29:24 PAGE 3   
+
+ 117   3            proHight();
+ 118   3          }
+ 119   2          WDTFLG=0XA5;//??
+ 120   2          if(!IntFlag || MaybeRemoteStart || RemoteStart)
+ 121   2                continue;     //10ms????
+ 122   2          IntFlag = 0;
+ 123   2          if(keyRead(~P10) == 2)
+ 124   2          {
+ 125   3              if(workStep == 0)
+ 126   3              {
+ 127   4                  powerOn();
+ 128   4              }
+ 129   3              else
+ 130   3              {
+ 131   4                  powerOff();
+ 132   4              }
+ 133   3          }
+ 134   2        
+ 135   2          if(workStep == 0)
+ 136   2          {
+ 137   3            //sendtoLast(BLACK,1,LED_OPEN);
+ 138   3            //sendtoLast(BLACK,2,LED_HL);
+ 139   3            sendtoLast(BLACK,3,LED_HL);
+ 140   3            deadLock = 0;
+ 141   3            deadtime = 0;
+ 142   3          }
+ 143   2          else
+ 144   2          {
+ 145   3              workCtr();
+ 146   3              
+ 147   3          }
+ 148   2          
+ 149   2        
+ 150   2              //i= 5;while(i--)delay(100);
+ 151   2        }
+ 152   1      }
+*** WARNING C280 IN LINE 73 OF MAIN.C: 'i': unreferenced local variable
+ 153          
+ 154          
+ 155          void proData()
+ 156          {
+ 157   1      
+ 158   1        irCode = (u8t)(~data4);
+ 159   1        if(irCode == data3 && keyTime == 0)
+ 160   1        {
+ 161   2          keyTime = 10;
+ 162   2          switch(irCode)
+ 163   2          {
+ 164   3            case 0x45:
+ 165   3            sendtoLast(RED,3,LED_HL);
+ 166   3            break;
+ 167   3            case 0x46:
+ 168   3            sendtoLast(GREEN,3,LED_HL);
+ 169   3            break;
+ 170   3            case 0x1E:
+ 171   3            powerOff();
+ 172   3            break;
+ 173   3            case 0x1F:
+ 174   3            powerOn();
+ 175   3            break;
+ 176   3            case 0x1C:        //light inc
+ 177   3            if(++duty >= 20)
+C51 COMPILER V9.01   MAIN                                                                  10/23/2020 19:29:24 PAGE 4   
+
+ 178   3              duty = 20;
+ 179   3            break;
+ 180   3            case 0x1D:        //light dec
+ 181   3            if(--duty < 8)
+ 182   3                  duty = 8;
+ 183   3            break;
+ 184   3            case 0x00:
+ 185   3              colorStep = 1;
+ 186   3            break;
+ 187   3            case 0x04:
+ 188   3              colorStep = 2;
+ 189   3            break;
+ 190   3            case 0x08:
+ 191   3              colorStep = 3;
+ 192   3            break;
+ 193   3            case 0x0C:
+ 194   3              colorStep = 4;
+ 195   3            break;
+ 196   3            case 0x10:
+ 197   3              colorStep = 5;
+ 198   3            break;
+ 199   3            
+ 200   3            case 0x01:
+ 201   3              colorStep = 6;
+ 202   3            break;
+ 203   3            case 0x05:
+ 204   3              colorStep = 7;
+ 205   3            break;
+ 206   3            case 0x09:
+ 207   3              colorStep = 8;
+ 208   3            break;
+ 209   3            case 0x0D:
+ 210   3              colorStep = 9;
+ 211   3            break;
+ 212   3            case 0x11:
+ 213   3              colorStep = 10;
+ 214   3            break;
+ 215   3            
+ 216   3            case 0x02:
+ 217   3              colorStep = 11;
+ 218   3            break;
+ 219   3            case 0x06:
+ 220   3              colorStep = 12;
+ 221   3            break;
+ 222   3            case 0x0A:
+ 223   3              colorStep = 13;
+ 224   3            break;
+ 225   3            case 0x0E:
+ 226   3              colorStep = 14;
+ 227   3            break;
+ 228   3            case 0x12:
+ 229   3              colorStep = 15;
+ 230   3            break;
+ 231   3            case 0x03:
+ 232   3              colorStep = 16;
+ 233   3            break;
+ 234   3            
+ 235   3      //      case 0x09:
+ 236   3      //      break;
+ 237   3      //      case 0x0C:
+ 238   3      //      break;
+ 239   3      //      case 0x0D:
+C51 COMPILER V9.01   MAIN                                                                  10/23/2020 19:29:24 PAGE 5   
+
+ 240   3      //      break;
+ 241   3      //      case 0x0E:
+ 242   3            default:
+ 243   3            break;
+ 244   3          }
+ 245   2        }
+ 246   1        ReadOver = 0;
+ 247   1        writeNvr();
+ 248   1      }
+ 249          
+ 250          //0为关机 1为三色常亮模式 2为灯带全彩流水 3为等带跑马流水 4多单色移动 5整体流水模式
+ 251          void workCtr()
+ 252          {
+ 253   1          if(workStep == 1)
+ 254   1          {
+ 255   2              showSingleColor();
+ 256   2          }
+ 257   1      
+ 258   1      
+ 259   1      }
+ 260          
+ 261          
+ 262          
+ 263          //显示单色
+ 264          void showSingleColor()
+ 265          {
+ 266   1      
+ 267   1        sendtoLast2(rgbs[colorStep],1,LED_OPEN);
+ 268   1        sendtoLast2(rgbs[colorStep],2,LED_HL);
+ 269   1        sendtoLast2(rgbs[colorStep],3,LED_HL);
+ 270   1        /**
+ 271   1        switch(colorStep)
+ 272   1              {
+ 273   1                case 1:
+ 274   1                  sendtoLast(RED,1,LED_OPEN);
+ 275   1                  sendtoLast(RED,2,LED_HL);
+ 276   1                  sendtoLast(RED,3,LED_HL);
+ 277   1                  break;
+ 278   1                  case 2:
+ 279   1                  sendtoLast(COLOR2,1,LED_OPEN);
+ 280   1                  sendtoLast(COLOR2,2,LED_HL);
+ 281   1                  sendtoLast(COLOR2,3,LED_HL);
+ 282   1                  break;
+ 283   1                  case 3:
+ 284   1                  sendtoLast(COLOR3,1,LED_OPEN);
+ 285   1                  sendtoLast(COLOR3,2,LED_HL);
+ 286   1                  sendtoLast(COLOR3,3,LED_HL);
+ 287   1                  break;
+ 288   1                  case 4:
+ 289   1                  sendtoLast(COLOR4,1,LED_OPEN);
+ 290   1                  sendtoLast(COLOR4,2,LED_HL);
+ 291   1                  sendtoLast(COLOR4,3,LED_HL);
+ 292   1                  break;
+ 293   1                    case 5:
+ 294   1                  sendtoLast(COLOR5,1,LED_OPEN);
+ 295   1                  sendtoLast(COLOR5,2,LED_HL);
+ 296   1                  sendtoLast(COLOR5,3,LED_HL);
+ 297   1                  break;
+ 298   1                    
+ 299   1                    case 6:
+ 300   1                  sendtoLast(GREEN,1,LED_OPEN);
+ 301   1                  sendtoLast(GREEN,2,LED_HL);
+C51 COMPILER V9.01   MAIN                                                                  10/23/2020 19:29:24 PAGE 6   
+
+ 302   1                  sendtoLast(GREEN,3,LED_HL);
+ 303   1                  break;
+ 304   1                  case 7:
+ 305   1                  sendtoLast(COLOR7,1,LED_OPEN);
+ 306   1                  sendtoLast(COLOR7,2,LED_HL);
+ 307   1                  sendtoLast(COLOR7,3,LED_HL);
+ 308   1                  break;
+ 309   1                  case 8:
+ 310   1                  sendtoLast(COLOR8,1,LED_OPEN);
+ 311   1                  sendtoLast(COLOR8,2,LED_HL);
+ 312   1                  sendtoLast(COLOR8,3,LED_HL);
+ 313   1                  break;
+ 314   1                  case 9:
+ 315   1                  sendtoLast(COLOR9,1,LED_OPEN);
+ 316   1                  sendtoLast(COLOR9,2,LED_HL);
+ 317   1                  sendtoLast(COLOR9,3,LED_HL);
+ 318   1                  break;
+ 319   1                    case 10:
+ 320   1                  sendtoLast(COLOR10,1,LED_OPEN);
+ 321   1                  sendtoLast(COLOR10,2,LED_HL);
+ 322   1                  sendtoLast(COLOR10,3,LED_HL);
+ 323   1                  break;
+ 324   1                    
+ 325   1                    case 11:
+ 326   1                  sendtoLast(BLUE,1,LED_OPEN);
+ 327   1                  sendtoLast(BLUE,2,LED_HL);
+ 328   1                  sendtoLast(BLUE,3,LED_HL);
+ 329   1                  break;
+ 330   1                  case 12:
+ 331   1                  sendtoLast(COLOR12,1,LED_OPEN);
+ 332   1                  sendtoLast(COLOR12,2,LED_HL);
+ 333   1                  sendtoLast(COLOR12,3,LED_HL);
+ 334   1                  break;
+ 335   1                  case 13:
+ 336   1                  sendtoLast(COLOR13,1,LED_OPEN);
+ 337   1                  sendtoLast(COLOR13,2,LED_HL);
+ 338   1                  sendtoLast(COLOR13,3,LED_HL);
+ 339   1                  break;
+ 340   1                  case 14:
+ 341   1                  sendtoLast(COLOR14,1,LED_OPEN);
+ 342   1                  sendtoLast(COLOR14,2,LED_HL);
+ 343   1                  sendtoLast(COLOR14,3,LED_HL);
+ 344   1                  break;
+ 345   1                  case 15:
+ 346   1                  sendtoLast(COLOR15,1,LED_OPEN);
+ 347   1                  sendtoLast(COLOR15,2,LED_HL);
+ 348   1                  sendtoLast(COLOR15,3,LED_HL);
+ 349   1                  break;
+ 350   1                  case 16:
+ 351   1                  sendtoLast(WHITE,1,LED_OPEN);
+ 352   1                  sendtoLast(WHITE,2,LED_HL);
+ 353   1                  sendtoLast(WHITE,3,LED_HL);
+ 354   1                  break;
+ 355   1              }
+ 356   1              
+ 357   1              */
+ 358   1      }
+ 359          
+ 360          
+ 361          
+ 362          char keyRead(char keyStatus)  
+ 363          { 
+C51 COMPILER V9.01   MAIN                                                                  10/23/2020 19:29:24 PAGE 7   
+
+ 364   1        if(keyStatus)
+ 365   1        {
+ 366   2          keyCount++;
+ 367   2          if(keyCount >= 200)
+ 368   2          {
+ 369   3            keyCount = 200;
+ 370   3            if(!longPressFlag)
+ 371   3            {
+ 372   4              longPressFlag = 1;
+ 373   4              return 2;
+ 374   4            }
+ 375   3          }
+ 376   2        }
+ 377   1        else
+ 378   1        {
+ 379   2          if(keyCount >= 200)
+ 380   2          {
+ 381   3            keyCount = 0;
+ 382   3            longPressFlag = 0;
+ 383   3            return  0;
+ 384   3          }
+ 385   2          else if(keyCount >= 8)
+ 386   2          {
+ 387   3            keyCount = 0;
+ 388   3            return  1;
+ 389   3          }
+ 390   2          keyCount = 0;
+ 391   2        }
+ 392   1        return 0;
+ 393   1      }
+ 394          
+ 395          
+ 396          void powerOn()
+ 397          {
+ 398   1        u8t i;
+ 399   1        for(i=0;i<SECTOR_SIZE;i++)
+ 400   1            rbuf[i]=0;
+ 401   1          readDatafromNVR(rbuf,NVR1_START_ADDR,SECTOR_SIZE);
+ 402   1          delay_1ms();
+ 403   1          workStep = rbuf[0];
+ 404   1          colorStep = rbuf[1];
+ 405   1          starFlag = rbuf[2];
+ 406   1          allIncStep = rbuf[3];
+ 407   1          duty = 20;
+ 408   1          if(workStep == 0 || workStep > 5)
+ 409   1              workStep = 1;
+ 410   1          if(colorStep == 0 || colorStep > 16)
+ 411   1              colorStep = 1;
+ 412   1      }
+ 413          
+ 414          void powerOff()
+ 415          {
+ 416   1          workStep = 0;
+ 417   1          
+ 418   1      }
+ 419          
+ 420          void writeNvr()
+ 421          {
+ 422   1          EraseNVR(NVR1_START_ADDR);
+ 423   1          delay_1ms();
+ 424   1          buf[0] = workStep;
+ 425   1          buf[1] = colorStep;
+C51 COMPILER V9.01   MAIN                                                                  10/23/2020 19:29:24 PAGE 8   
+
+ 426   1          buf[2] = starFlag;
+ 427   1          buf[3] = allIncStep;
+ 428   1          WriteDataNVR(buf,NVR1_START_ADDR,SECTOR_SIZE);
+ 429   1      }
+ 430          
+ 431          
+ 432          
+ 433          
+ 434          //RGB
+ 435          
+ 436          
+ 437          void breath3(unsigned char *data1,unsigned char *data2,unsigned char *data3,char index)
+ 438          {
+ 439   1          if((*data3) > 10)
+ 440   1        {
+ 441   2          --(*data3);
+ 442   2        }
+ 443   1        
+ 444   1        if((*data2) > 10)
+ 445   1        {
+ 446   2          --(*data2);
+ 447   2        }
+ 448   1        
+ 449   1        if((*data1) > 10)
+ 450   1        {
+ 451   2          --(*data1);
+ 452   2        }
+ 453   1        sendtoLast(*data1,*data2,*data3,index);
+*** WARNING C209 IN LINE 453 OF MAIN.C: '_sendtoLast': too few actual parameters
+ 454   1      }
+ 455          
+ 456          void sendRGB(unsigned char colorR,unsigned char colorG,unsigned char colorB)
+ 457          {
+ 458   1      //    Rdata = colorR;
+ 459   1      //    Gdata = colorG;
+ 460   1          EA = 0;
+ 461   1          Rdata = colorR;
+ 462   1          Gdata = colorG;
+ 463   1          Bdata = colorB ;
+ 464   1          
+ 465   1          if(R7)
+ 466   1          NUB1();
+ 467   1          else
+ 468   1          NUB0();
+ 469   1          if(R6)
+ 470   1          NUB1();
+ 471   1          else
+ 472   1          NUB0();
+ 473   1          if(R5)
+ 474   1          NUB1();
+ 475   1          else
+ 476   1          NUB0();
+ 477   1          if(R4)
+ 478   1          NUB1();
+ 479   1          else
+ 480   1          NUB0();
+ 481   1          if(R3)
+ 482   1          NUB1();
+ 483   1          else
+ 484   1          NUB0();
+ 485   1          if(R2)
+ 486   1          NUB1();
+C51 COMPILER V9.01   MAIN                                                                  10/23/2020 19:29:24 PAGE 9   
+
+ 487   1          else
+ 488   1          NUB0();
+ 489   1          if(R1)
+ 490   1          NUB1();
+ 491   1          else
+ 492   1          NUB0();
+ 493   1          if(R0)
+ 494   1          NUB1();
+ 495   1          else
+ 496   1          NUB0();
+ 497   1          //G
+ 498   1          if(G7)
+ 499   1          NUB1();
+ 500   1          else
+ 501   1          NUB0();
+ 502   1          if(G6)
+ 503   1          NUB1();
+ 504   1          else
+ 505   1          NUB0();
+ 506   1          if(G5)
+ 507   1          NUB1();
+ 508   1          else
+ 509   1          NUB0();
+ 510   1          if(G4)
+ 511   1          NUB1();
+ 512   1          else
+ 513   1          NUB0();
+ 514   1          if(G3)
+ 515   1          NUB1();
+ 516   1          else
+ 517   1          NUB0();
+ 518   1          if(G2)
+ 519   1          NUB1();
+ 520   1          else
+ 521   1          NUB0();
+ 522   1          if(G1)
+ 523   1          NUB1();
+ 524   1          else
+ 525   1          NUB0();
+ 526   1          if(G0)
+ 527   1          NUB1();
+ 528   1          else
+ 529   1          NUB0();
+ 530   1          //B
+ 531   1          if(B7)
+ 532   1          NUB1();
+ 533   1          else
+ 534   1          NUB0();
+ 535   1          if(B6)
+ 536   1          NUB1();
+ 537   1          else
+ 538   1          NUB0();
+ 539   1          if(B5)
+ 540   1          NUB1();
+ 541   1          else
+ 542   1          NUB0();
+ 543   1          if(B4)
+ 544   1          NUB1();
+ 545   1          else
+ 546   1          NUB0();
+ 547   1          if(B3)
+ 548   1          NUB1();
+C51 COMPILER V9.01   MAIN                                                                  10/23/2020 19:29:24 PAGE 10  
+
+ 549   1          else
+ 550   1          NUB0();
+ 551   1          if(B2)
+ 552   1          NUB1();
+ 553   1          else
+ 554   1          NUB0();
+ 555   1          if(B1)
+ 556   1          NUB1();
+ 557   1          else
+ 558   1          NUB0();
+ 559   1          if(B0)
+ 560   1          NUB1();
+ 561   1          else
+ 562   1          NUB0();
+ 563   1      
+ 564   1        PB3 = 0;  
+ 565   1          EA = 1;
+ 566   1      }
+ 567          
+ 568          void sendRGB2(unsigned char colorR,unsigned char colorG,unsigned char colorB)
+ 569          {
+ 570   1      //    Rdata = colorR;
+ 571   1      //    Gdata = colorG;
+ 572   1          EA = 0;
+ 573   1          Rdata = colorR;
+ 574   1          Gdata = colorG;
+ 575   1          Bdata = colorB ;
+ 576   1          
+ 577   1          if(R7)
+ 578   1          NUB21();
+ 579   1          else
+ 580   1          NUB20();
+ 581   1          if(R6)
+ 582   1          NUB21();
+ 583   1          else
+ 584   1          NUB20();
+ 585   1          if(R5)
+ 586   1          NUB21();
+ 587   1          else
+ 588   1          NUB20();
+ 589   1          if(R4)
+ 590   1          NUB21();
+ 591   1          else
+ 592   1          NUB20();
+ 593   1          if(R3)
+ 594   1          NUB21();
+ 595   1          else
+ 596   1          NUB20();
+ 597   1          if(R2)
+ 598   1          NUB21();
+ 599   1          else
+ 600   1          NUB20();
+ 601   1          if(R1)
+ 602   1          NUB21();
+ 603   1          else
+ 604   1          NUB20();
+ 605   1          if(R0)
+ 606   1          NUB21();
+ 607   1          else
+ 608   1          NUB20();
+ 609   1          //G
+ 610   1          if(G7)
+C51 COMPILER V9.01   MAIN                                                                  10/23/2020 19:29:24 PAGE 11  
+
+ 611   1          NUB21();
+ 612   1          else
+ 613   1          NUB20();
+ 614   1          if(G6)
+ 615   1          NUB21();
+ 616   1          else
+ 617   1          NUB20();
+ 618   1          if(G5)
+ 619   1          NUB21();
+ 620   1          else
+ 621   1          NUB20();
+ 622   1          if(G4)
+ 623   1          NUB21();
+ 624   1          else
+ 625   1          NUB20();
+ 626   1          if(G3)
+ 627   1          NUB21();
+ 628   1          else
+ 629   1          NUB20();
+ 630   1          if(G2)
+ 631   1          NUB21();
+ 632   1          else
+ 633   1          NUB20();
+ 634   1          if(G1)
+ 635   1          NUB21();
+ 636   1          else
+ 637   1          NUB20();
+ 638   1          if(G0)
+ 639   1          NUB21();
+ 640   1          else
+ 641   1          NUB20();
+ 642   1          //B
+ 643   1          if(B7)
+ 644   1          NUB21();
+ 645   1          else
+ 646   1          NUB20();
+ 647   1          if(B6)
+ 648   1          NUB21();
+ 649   1          else
+ 650   1          NUB20();
+ 651   1          if(B5)
+ 652   1          NUB21();
+ 653   1          else
+ 654   1          NUB20();
+ 655   1          if(B4)
+ 656   1          NUB21();
+ 657   1          else
+ 658   1          NUB20();
+ 659   1          if(B3)
+ 660   1          NUB21();
+ 661   1          else
+ 662   1          NUB20();
+ 663   1          if(B2)
+ 664   1          NUB21();
+ 665   1          else
+ 666   1          NUB20();
+ 667   1          if(B1)
+ 668   1          NUB21();
+ 669   1          else
+ 670   1          NUB20();
+ 671   1          if(B0)
+ 672   1          NUB21();
+C51 COMPILER V9.01   MAIN                                                                  10/23/2020 19:29:24 PAGE 12  
+
+ 673   1          else
+ 674   1          NUB20();
+ 675   1      
+ 676   1        PA7 = 0;
+ 677   1        EA = 1;
+ 678   1      }
+ 679          
+ 680          
+ 681          void sendRGB3(unsigned char colorR,unsigned char colorG,unsigned char colorB)
+ 682          {
+ 683   1      //    Rdata = colorR;
+ 684   1      //    Gdata = colorG;
+ 685   1          EA = 0;
+ 686   1          Rdata = colorR;
+ 687   1          Gdata = colorG;
+ 688   1          Bdata = colorB ;
+ 689   1          
+ 690   1      
+ 691   1          if(R7)
+ 692   1          NUB31();
+ 693   1          else
+ 694   1          NUB30();
+ 695   1          if(R6)
+ 696   1          NUB31();
+ 697   1          else
+ 698   1          NUB30();
+ 699   1          if(R5)
+ 700   1          NUB31();
+ 701   1          else
+ 702   1          NUB30();
+ 703   1          if(R4)
+ 704   1          NUB31();
+ 705   1          else
+ 706   1          NUB30();
+ 707   1          if(R3)
+ 708   1          NUB31();
+ 709   1          else
+ 710   1          NUB30();
+ 711   1          if(R2)
+ 712   1          NUB31();
+ 713   1          else
+ 714   1          NUB30();
+ 715   1          if(R1)
+ 716   1          NUB31();
+ 717   1          else
+ 718   1          NUB30();
+ 719   1          if(R0)
+ 720   1          NUB31();
+ 721   1          else
+ 722   1          NUB30();
+ 723   1          //G
+ 724   1          if(G7)
+ 725   1          NUB31();
+ 726   1          else
+ 727   1          NUB30();
+ 728   1          if(G6)
+ 729   1          NUB31();
+ 730   1          else
+ 731   1          NUB30();
+ 732   1          if(G5)
+ 733   1          NUB31();
+ 734   1          else
+C51 COMPILER V9.01   MAIN                                                                  10/23/2020 19:29:24 PAGE 13  
+
+ 735   1          NUB30();
+ 736   1          if(G4)
+ 737   1          NUB31();
+ 738   1          else
+ 739   1          NUB30();
+ 740   1          if(G3)
+ 741   1          NUB31();
+ 742   1          else
+ 743   1          NUB30();
+ 744   1          if(G2)
+ 745   1          NUB31();
+ 746   1          else
+ 747   1          NUB30();
+ 748   1          if(G1)
+ 749   1          NUB31();
+ 750   1          else
+ 751   1          NUB30();
+ 752   1          if(G0)
+ 753   1          NUB31();
+ 754   1          else
+ 755   1          NUB30();
+ 756   1          //B
+ 757   1          if(B7)
+ 758   1          NUB31();
+ 759   1          else
+ 760   1          NUB30();
+ 761   1          if(B6)
+ 762   1          NUB31();
+ 763   1          else
+ 764   1          NUB30();
+ 765   1          if(B5)
+ 766   1          NUB31();
+ 767   1          else
+ 768   1          NUB30();
+ 769   1          if(B4)
+ 770   1          NUB31();
+ 771   1          else
+ 772   1          NUB30();
+ 773   1          if(B3)
+ 774   1          NUB31();
+ 775   1          else
+ 776   1          NUB30();
+ 777   1          if(B2)
+ 778   1          NUB31();
+ 779   1          else
+ 780   1          NUB30();
+ 781   1          if(B1)
+ 782   1          NUB31();
+ 783   1          else
+ 784   1          NUB30();
+ 785   1          if(B0)
+ 786   1          NUB31();
+ 787   1          else
+ 788   1          NUB30();
+ 789   1          
+ 790   1        PA0 = 0;
+ 791   1          EA = 1;
+ 792   1      }
+ 793          
+ 794          
+ 795          void sendtoLast(unsigned char colorR,unsigned char colorG,unsigned char colorB,char index,unsigned char le
+             -dCount)
+C51 COMPILER V9.01   MAIN                                                                  10/23/2020 19:29:24 PAGE 14  
+
+ 796          {
+ 797   1        int j;
+ 798   1        char tempcolorR,tempcolorG,tempcolorB;
+ 799   1        Rdata1 = colorR;
+ 800   1        Gdata1 = colorG;
+ 801   1        Bdata1 = colorB;
+ 802   1        tempcolorR = (colorR/DUTYMAX)*duty;
+ 803   1        tempcolorG = (colorG/DUTYMAX)*duty;
+ 804   1        tempcolorB = (colorB/DUTYMAX)*duty;
+ 805   1        for(j=0;j<ledCount;j++)
+ 806   1        {
+ 807   2          if(index == 1)
+ 808   2            sendRGB(tempcolorR,tempcolorG,tempcolorB);
+ 809   2          else if(index == 2)
+ 810   2            sendRGB2(tempcolorR,tempcolorG,tempcolorB);
+ 811   2          else if(index == 3)
+ 812   2            sendRGB3(tempcolorR,tempcolorG,tempcolorB);
+ 813   2          
+ 814   2          if(IR == 0)
+ 815   2            return;
+ 816   2        }
+ 817   1        Delay80us();
+ 818   1      }
+ 819          
+ 820          
+ 821          void sendtoLast2(SRGB srgb,char index,unsigned char ledCount)
+ 822          {
+ 823   1        sendtoLast(srgb.red,srgb.green,srgb.blue,index,ledCount);
+ 824   1      }
+ 825          
+ 826          
+ 827          
+ 828          
+ 829          
+ 830          /* RGB 单点累加 */
+ 831          void ledplus(u8t Dir) {
+ 832   1        
+ 833   1      }
+*** WARNING C280 IN LINE 831 OF MAIN.C: 'Dir': unreferenced local variable
+ 834          
+ 835          
+ 836          //IR相关
+ 837          void cleanData()
+ 838          {
+ 839   1              accTimeH = 0;
+ 840   1              MaybeRemoteStart = 0;       //?????
+ 841   1              RemoteStart = 0;
+ 842   1              sleepFlag = 0;
+ 843   1              bitIndex = 0;
+ 844   1              OneCode = 0;
+ 845   1              ZeroCode = 0;
+ 846   1              ReadOver = 0;
+ 847   1      }
+ 848          
+ 849          void proHight()
+ 850          {
+ 851   1          TR1 = 0;
+ 852   1        T1Counter = TH1;
+ 853   1        T1Counter = T1Counter << 5;
+ 854   1        T1Counter = T1Counter + (TL1&0x1F);
+ 855   1        T1Counter = T1Counter + (accTimeH*8192);
+ 856   1        T1Counter = T1Counter;
+C51 COMPILER V9.01   MAIN                                                                  10/23/2020 19:29:24 PAGE 15  
+
+ 857   1        TL1 = (8192-8192) & 0x1F;       //初始值低字节，TL0 的高 3 位是无效的
+ 858   1        TH1 = (8192-8192) >> 5; 
+ 859   1        accTimeH = 0;
+ 860   1        TR1 = 1;
+ 861   1          if(MaybeRemoteStart && T1Counter > (HeadCont_H - (FaultTolerant*FaultTolerantX)) && T1Counter < (HeadCon
+             -t_H + (FaultTolerant*FaultTolerantX)))
+ 862   1          {
+ 863   2                      MaybeRemoteStart = 0;       //?????
+ 864   2                      RemoteStart = 1;
+ 865   2                      sleepFlag = 0;
+ 866   2                      bitIndex = 0;
+ 867   2                      OneCode = 0;
+ 868   2                      ZeroCode = 0;
+ 869   2                      ReadOver = 0;
+ 870   2          }
+ 871   1          else if(RemoteStart)
+ 872   1          {
+ 873   2            if((T1Counter> (OneCode_H - FaultTolerant))&&(T1Counter < (OneCode_H + FaultTolerant)))
+ 874   2                  {
+ 875   3                      OneCode = 1;
+ 876   3                      ZeroCode = 0;
+ 877   3                  }
+ 878   2                  else
+ 879   2                  {
+ 880   3                      if((T1Counter > (Zero_H - FaultTolerant))&&(T1Counter < (Zero_H + FaultTolerant)))
+ 881   3                      {
+ 882   4                          ZeroCode = 1;
+ 883   4                          OneCode = 0;
+ 884   4                      }
+ 885   3                      else
+ 886   3                      {
+ 887   4                          ZeroCode = 0;
+ 888   4                          OneCode = 0;
+ 889   4                      }
+ 890   3                  }
+ 891   2                  
+ 892   2                  if(OneCode)
+ 893   2                  {
+ 894   3                      //?????bit ?1
+ 895   3                      GetOneByte(1);
+ 896   3                  }
+ 897   2                else if(ZeroCode)
+ 898   2                  {
+ 899   3                      //?????bit ?0
+ 900   3                      GetOneByte(0);
+ 901   3                  }
+ 902   2          }
+ 903   1          else
+ 904   1          {
+ 905   2             MaybeRemoteStart = 0;       //?????
+ 906   2                   RemoteStart = 0;
+ 907   2                  sleepFlag = 0;
+ 908   2                  bitIndex = 0;
+ 909   2                  OneCode = 0;
+ 910   2                  ZeroCode = 0;
+ 911   2                  ReadOver = 0;
+ 912   2          
+ 913   2          }
+ 914   1        
+ 915   1          
+ 916   1      }
+ 917          
+C51 COMPILER V9.01   MAIN                                                                  10/23/2020 19:29:24 PAGE 16  
+
+ 918          void proLow()
+ 919          {
+ 920   1        TR1 = 0;
+ 921   1        T1Counter = TH1;
+ 922   1        T1Counter = T1Counter << 5;
+ 923   1        T1Counter = T1Counter + (TL1&0x1F);
+ 924   1        T1Counter = T1Counter + (accTimeH*8192);
+ 925   1        T1Counter = T1Counter;
+ 926   1        TL1 = (8192-8192) & 0x1F;       //初始值低字节，TL0 的高 3 位是无效的
+ 927   1        TH1 = (8192-8192) >> 5; 
+ 928   1        accTimeH = 0;
+ 929   1        TR1 = 1;
+ 930   1        if((T1Counter > (HeadCont_L - (FaultTolerant*FaultTolerantX)))&&(T1Counter < (HeadCont_L + (FaultTolerant
+             -*FaultTolerantX))))
+ 931   1          {
+ 932   2              RemoteStart = 0;       //?????
+ 933   2              MaybeRemoteStart = 1;   //???????
+ 934   2              sleepFlag = 0;
+ 935   2              bitIndex = 0;
+ 936   2              OneCode = 0;
+ 937   2              ZeroCode = 0;
+ 938   2              ReadOver = 0;
+ 939   2          }
+ 940   1        else if(RemoteStart)
+ 941   1        {
+ 942   2      //      if((T1Counter > (FootCont_L - FaultTolerant)) &&(T1Counter < (FootCont_L + (FaultTolerant*FaultTole
+             -rantX)))) //???,??????????
+ 943   2      //        {
+ 944   2      //            ReadOver = 1;
+ 945   2      //            OneCode = 0;
+ 946   2      //            ZeroCode = 0;
+ 947   2      //            RemoteStart = 0;
+ 948   2      //            bitIndex = 0;
+ 949   2      //        }
+ 950   2          
+ 951   2          if((T1Counter >(OneCode_L - FaultTolerant))&&(T1Counter < (OneCode_L + FaultTolerant)))
+ 952   2              {
+ 953   3                  //????
+ 954   3                 _nop_();
+ 955   3              }
+ 956   2              else
+ 957   2              {
+ 958   3                  //????,??????
+ 959   3                  cleanData();
+ 960   3                  
+ 961   3              }
+ 962   2        }
+ 963   1          
+ 964   1      }
+ 965          
+ 966          
+ 967          void GetOneByte(u8t bitNub)
+ 968          {
+ 969   1        if(RemoteStart)
+ 970   1        {
+ 971   2              if(bitIndex == 0)
+ 972   2            {
+ 973   3              bitIndex = 0;
+ 974   3              value = 0;
+ 975   3              data1 = data2 = data3 = data4 = 0;
+ 976   3            }
+ 977   2            ++bitIndex;
+C51 COMPILER V9.01   MAIN                                                                  10/23/2020 19:29:24 PAGE 17  
+
+ 978   2            if(bitNub)
+ 979   2            {
+ 980   3              value |= 0x80;
+ 981   3            
+ 982   3            }
+ 983   2            if(bitIndex == 8)
+ 984   2            {
+ 985   3              data1 = value;
+ 986   3            }
+ 987   2            else if(bitIndex == 16)
+ 988   2            {
+ 989   3              data2 = value;
+ 990   3      
+ 991   3            }
+ 992   2            else if(bitIndex == 24)
+ 993   2            {
+ 994   3              data3 = value;
+ 995   3      
+ 996   3            }
+ 997   2            else if(bitIndex == 32)
+ 998   2            {
+ 999   3              data4 = value;
+1000   3                  ReadOver = 1;
+1001   3                      OneCode = 0;
+1002   3                      ZeroCode = 0;
+1003   3                      RemoteStart = 0;
+1004   3                      bitIndex = 0;
+1005   3              
+1006   3            }
+1007   2            value = value >> 1;
+1008   2        }
+1009   1      }
+1010          
+1011          
+1012          
+1013          /*****************************************************
+1014          *函数名称：void init_timer0(void)
+1015          *函数功能：Timer0初始化配置
+1016          *入口参数：
+1017          *出口参数：
+1018          *****************************************************/
+1019          void init_timer0(void)
+1020          {
+1021   1        TMOD &= 0xf0;                 //定时器,时钟为系统时钟 12 分频 
+1022   1                        //模式0,TL0 和 TH0 组成 13 位定时器/计数器
+1023   1          TL0 = (8192-1334) & 0x1F;       //初始值低字节，TL0 的高 3 位是无效的
+1024   1          TH0 = (8192-1334) >> 5;         //初始值高字节(1ms@16MHz)
+1025   1                      
+1026   1          ET0 = 1;  //开中断 定时器 0 中断使能控制位
+1027   1          EA = 1;   //总中断
+1028   1          TR0 = 1;  //启动定时器
+1029   1      
+1030   1      }
+1031          
+1032          
+1033          /*****************************************************
+1034          * 中断服务函数
+1035          *****************************************************/
+1036          void timer0_isr (void) interrupt 1  
+1037          {
+1038   1          /* set timer0 as mode0 (13-bit) */
+1039   1          TL0 = (8192-1334) & 0x1F;       //初始值低字节，TL0 的高 3 位是无效的
+C51 COMPILER V9.01   MAIN                                                                  10/23/2020 19:29:24 PAGE 18  
+
+1040   1          TH0 = (8192-1334) >> 5;         //初始值高字节(1ms@16MHz)
+1041   1        // todo ...
+1042   1        //P35=~P35;
+1043   1        if(++intCount >= 10)
+1044   1        {
+1045   2            IntFlag = 1;
+1046   2            intCount = 0;
+1047   2            if(keyTime > 0)
+1048   2            {
+1049   3              --keyTime;
+1050   3              if(keyTime == 0)
+1051   3                  cleanData();
+1052   3            }
+1053   2            if(++count1S >= 100)
+1054   2            {
+1055   3                count1S = 0;
+1056   3                if(deadLock && deadtime)
+1057   3                {
+1058   4                    if(--deadtime == 0)
+1059   4                    {
+1060   5                      powerOff();
+1061   5                      deadLock = 0;
+1062   5                      deadtime = 0;
+1063   5                    }
+1064   4                }
+1065   3            }
+1066   2        }
+1067   1      }
+1068          
+1069          /*****************************************************
+1070          *函数名称：void init_timer1(void)
+1071          *函数功能：Timer1初始化配置
+1072          *入口参数：
+1073          *出口参数：
+1074          *****************************************************/
+1075          void init_timer1(void)
+1076          {
+1077   1        TMOD &= 0x0f;                 //定时器,时钟为系统时钟 12 分频 
+1078   1                        //模式0,TL1 和 TH1 组成 13 位定时器/计数器
+1079   1          TL1 = (8192-41) & 0x1F;       //初始值低字节，TL1 的高 3 位是无效的
+1080   1          TH1 = (8192-41) >> 5;         //初始值高字节(1ms@16MHz)
+1081   1                      
+1082   1          ET1 = 1;  //开中断 定时器 1 中断使能控制位
+1083   1          EA = 1;   //总中断
+1084   1          TR1 = 1;  //启动定时器
+1085   1      }
+1086          
+1087          
+1088          /*****************************************************
+1089          * 中断服务函数
+1090          *****************************************************/
+1091          void timer1_isr (void) interrupt 3  
+1092          {
+1093   1          /* set timer1 as mode0 (13-bit) */
+1094   1          TL1 = (8192-8192) & 0x1F;       //初始值低字节，TL0 的高 3 位是无效的
+1095   1          TH1 = (8192-8192) >> 5;         //初始值高字节(1ms@16MHz)
+1096   1        // todo ...
+1097   1          ++accTimeH;
+1098   1          //P35=~P35;
+1099   1      }
+1100          
+1101          
+C51 COMPILER V9.01   MAIN                                                                  10/23/2020 19:29:24 PAGE 19  
+
+1102          
+1103          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   3488    ----
+   CONSTANT SIZE    =     51    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     43      28
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  3 WARNING(S),  0 ERROR(S)

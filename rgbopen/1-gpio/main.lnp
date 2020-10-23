@@ -1,0 +1,6 @@
+"STARTUP.obj",
+"main.obj",
+"WS51F7030.obj",
+"nvr.obj" 
+TO "main" 
+RAMSIZE(256) 
